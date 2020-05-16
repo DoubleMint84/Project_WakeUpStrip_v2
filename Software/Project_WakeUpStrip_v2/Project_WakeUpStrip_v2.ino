@@ -4,8 +4,9 @@
 #define CLK_tm 7
 #define DIO 6
 #define SW 11
-#define maxArrSize 30
-#define kolArr 10
+#define maxArrSize 28
+#define kolArrMenu 3
+#define kolArrSettings 4
 #define oled_adr 0x78
 #define clock_adr 0x68
 //---------------------БИБЛИОТЕКИ
@@ -23,10 +24,12 @@ GyverTM1637 disp(CLK_tm, DIO);
 extern uint8_t SmallFont[];
 
 int value = 0, change = 0;
+byte level = 0;
 bool inMenu = false, dots = true;
 DateTime t_now, t_prev;
 
-char menu[][maxArrSize] = {"Settings", "Alarm1(--:--, OFF)", "Alarm2(--:--, OFF)", "Light", "BACK", "Sms", "Connection", "Reset", "Somebody", "once told me"};
+const char menu[][maxArrSize] = {"Alarm On/Off", "Settings", "Light"};
+const char settngs_menu[][maxArrSize] = {"Time", "Date", "Alarm set", "Dawn time"};
 
 void setup() {
   Wire.begin();
@@ -69,18 +72,34 @@ void loop() {
 
 void setupTick() {
   if (enc1.isTurn() and inMenu) {       // если был совершён поворот (индикатор поворота в любую сторону)
-
-
-    myOLED.clrScr();
-    myOLED.print(F("Main menu"), CENTER, 0);
-    for (int i = 0; i < ((kolArr - change > 6) ? 6 : kolArr - change); i++) {
-      if (i == 0) {
-        myOLED.print(String("->") + String(menu[change + i]), LEFT, 8 * (i + 1));
-      } else {
-        myOLED.print(String("  ") + String(menu[change + i]), LEFT, 8 * (i + 1));
-      }
+    switch (level) {
+      case 0:
+        myOLED.clrScr();
+        myOLED.print(F("Main menu"), CENTER, 0);
+        for (int i = 0; i < ((kolArrMenu - change > 6) ? 6 : kolArrMenu - change); i++) {
+          if (i == 0) {
+            myOLED.print(String("->") + String(menu[change + i]), LEFT, 8 * (i + 1));
+          } else {
+            myOLED.print(String("  ") + String(menu[change + i]), LEFT, 8 * (i + 1));
+          }
+        }
+        myOLED.update();
+        break;
+      case 1:
+        myOLED.clrScr();
+        myOLED.print(F("Settings"), CENTER, 0);
+        for (int i = 0; i < ((kolArrSettings - change > 6) ? 6 : kolArrSettings - change); i++) {
+          if (i == 0) {
+            myOLED.print(String("->") + String(settngs_menu[change + i]), LEFT, 8 * (i + 1));
+          } else {
+            myOLED.print(String("  ") + String(settngs_menu[change + i]), LEFT, 8 * (i + 1));
+          }
+        }
+        myOLED.update();
+        break;
     }
-    myOLED.update();
+
+
   }
 }
 
@@ -88,15 +107,45 @@ void inputTick() {
   enc1.tick();
   if (enc1.isClick()) {
     if (inMenu) {
-      inMenu = false;
-      myOLED.clrScr();
-      myOLED.update();
+      switch (level) {
+        case 0:
+          if (change == 0) {
+            alarm1.state = !alarm1.state;
+            inMenu = false;
+          }
+          else if (change == 1) {
+            level = 1;
+            change = 0;
+            myOLED.clrScr();
+            myOLED.print(F("Settings"), CENTER, 0);
+            for (int i = 0; i < ((kolArrSettings - change > 6) ? 6 : kolArrSettings - change); i++) {
+              if (i == 0) {
+                myOLED.print(String("->") + String(settngs_menu[change + i]), LEFT, 8 * (i + 1));
+              } else {
+                myOLED.print(String("  ") + String(settngs_menu[change + i]), LEFT, 8 * (i + 1));
+              }
+            }
+            myOLED.update();
+          } else {
+            inMenu = false;
+            myOLED.clrScr();
+            myOLED.update();
+          }
+          break;
+        case 1:
+          inMenu = false;
+          myOLED.clrScr();
+          myOLED.update();
+          break;
+      }
+
     } else {
       inMenu = true;
       change = 0;
+      level = 0;
       myOLED.clrScr();
       myOLED.print(F("Main menu"), CENTER, 0);
-      for (int i = 0; i < ((kolArr - change > 6) ? 6 : kolArr - change); i++) {
+      for (int i = 0; i < ((kolArrMenu - change > 6) ? 6 : kolArrMenu - change); i++) {
         if (i == 0) {
           myOLED.print(String("->") + String(menu[change + i]), LEFT, 8 * (i + 1));
         } else {
@@ -108,7 +157,16 @@ void inputTick() {
     }
   }
   if (inMenu) {
-    if (enc1.isLeft() and (change > 0)) change--;
-    if (enc1.isRight() and (change < kolArr - 1)) change++;
+    switch (level) {
+      case 0:
+        if (enc1.isLeft() and (change > 0)) change--;
+        if (enc1.isRight() and (change < kolArrMenu - 1)) change++;
+        break;
+      case 1:
+        if (enc1.isLeft() and (change > 0)) change--;
+        if (enc1.isRight() and (change < kolArrSettings - 1)) change++;
+        break;
+    }
+
   }
 }
