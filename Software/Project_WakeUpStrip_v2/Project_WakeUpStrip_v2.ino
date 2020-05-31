@@ -9,12 +9,24 @@
 #define kolArrSettings 4
 #define oled_adr 0x78
 #define clock_adr 0x68
-//---------------------БИБЛИОТЕКИ
+#define al_kol 5
+//-------------------КОНЕЦ-НАСТРОЕК---------------------
+
+//---------------------БИБЛИОТЕКИ-----------------------
 #include <OLED_I2C.h>
 #include "DS3231.h"
 #include "GyverEncoder.h"
 #include <Wire.h>
 #include "GyverTM1637.h"
+//------------------КОНЕЦ-БИБЛИОТЕК---------------------
+
+//---------------------СТРУКТУРЫ------------------------
+struct oneAlarm {
+  int8_t hour;
+  int8_t minute;
+  bool isActive;
+};
+//-------------------КОНЕЦ-СТРУКТУР---------------------
 
 Encoder enc1(CLK, DT, SW);  // для работы c кнопкой
 OLED  myOLED(SDA, SCL);
@@ -24,14 +36,16 @@ GyverTM1637 disp(CLK_tm, DIO);
 extern uint8_t SmallFont[];
 
 int value = 0, change = 0;
-byte level = 0;
+byte level = 0, change_time = 0;
 bool inMenu = false, dots = true;
 DateTime t_now, t_prev;
+oneAlarm alarms[al_kol];
 
 const char menu[][maxArrSize] = {"Alarm On/Off", "Settings", "Light"};
 const char settngs_menu[][maxArrSize] = {"Time", "Date", "Alarm set", "Dawn time"};
 
 void setup() {
+  Serial.begin(9600);
   Wire.begin();
   t_now = rtc.now();
   t_prev = t_now;
@@ -42,6 +56,7 @@ void setup() {
     while (1);  // In case the library failed to allocate enough RAM for the display buffer...
 
   myOLED.setFont(SmallFont);
+  enc1.setTickMode(MANUAL);
   enc1.setType(TYPE2);    // тип энкодера TYPE1 одношаговый, TYPE2 двухшаговый. Если ваш энкодер работает странно, смените тип
   myOLED.clrScr();
   /* myOLED.print(F("Main menu"), LEFT, 0);
@@ -59,19 +74,20 @@ void setup() {
 void loop() {
   inputTick();
   setupTick();
+  
   t_now = rtc.now();
   /*if (t_now.second() != t_prev.second()){
     disp.point(!dots);
     dots = !dots;
     }*/
-  if (t_now.minute() != t_prev.minute()) {
+  if ((t_now.minute() != t_prev.minute()) and (change_time == 0)) {
     disp.displayClock(byte(t_now.hour()), byte(t_now.minute()));
     t_prev = t_now;
   }
 }
 
 void setupTick() {
-  if (enc1.isTurn() and inMenu) {       // если был совершён поворот (индикатор поворота в любую сторону)
+  if (enc1.isTurn() && inMenu) {       // если был совершён поворот (индикатор поворота в любую сторону)
     switch (level) {
       case 0:
         myOLED.clrScr();
@@ -100,6 +116,8 @@ void setupTick() {
     }
 
 
+  } else if (/*enc1.isTurn()&& */ change_time == 1) {
+    disp.displayClock(byte(alarms[0].hour), byte(alarms[0].minute));
   }
 }
 
@@ -110,7 +128,7 @@ void inputTick() {
       switch (level) {
         case 0:
           if (change == 0) {
-            alarm1.state = !alarm1.state;
+            alarms[1].isActive = !alarms[1].isActive;
             inMenu = false;
           }
           else if (change == 1) {
@@ -133,13 +151,25 @@ void inputTick() {
           }
           break;
         case 1:
-          inMenu = false;
-          myOLED.clrScr();
-          myOLED.update();
+          if (change == 2) {
+            change = 0;
+            change_time = 1;
+            inMenu = false;
+            myOLED.clrScr();
+            myOLED.print(F("Alarm 1 setting"), CENTER, 0);
+            myOLED.print(F("Set the time"), CENTER, 16);
+            myOLED.print(F("on 7-segment disp"), CENTER, 24); 
+            myOLED.update();
+            disp.displayClock(byte(alarms[0].hour), byte(alarms[0].minute));
+          } else {
+            inMenu = false;
+            myOLED.clrScr();
+            myOLED.update();
+          }
           break;
       }
 
-    } else {
+    } else if (change_time == 0) {
       inMenu = true;
       change = 0;
       level = 0;
@@ -154,6 +184,34 @@ void inputTick() {
       }
       myOLED.update();
 
+    } else {
+      
+    }
+  }
+  if (change_time == 1) {
+    if (enc1.isRight()) {
+      alarms[change_time - 1].minute++;
+      if (alarms[change_time - 1].minute > 59) {
+        alarms[change_time - 1].minute = 0;
+        alarms[change_time - 1].hour++;
+        if (alarms[change_time - 1].hour > 23) alarms[change_time - 1].hour = 0;
+      }
+    }
+    else if (enc1.isLeft()) {
+      alarms[change_time - 1].minute--;
+      if (alarms[change_time - 1].minute < 0) {
+        alarms[change_time - 1].minute = 59;
+        alarms[change_time - 1].hour--;
+        if (alarms[change_time - 1].hour < 0) alarms[change_time - 1].hour = 23;
+      }
+    }
+    else if (enc1.isRightH()) {
+      alarms[change_time - 1].hour++;
+      if (alarms[change_time - 1].hour > 23) alarms[change_time - 1].hour = 0;
+    }
+    else if (enc1.isLeftH()) {
+      alarms[change_time - 1].hour--;
+      if (alarms[change_time - 1].hour < 0) alarms[change_time - 1].hour = 23;
     }
   }
   if (inMenu) {
