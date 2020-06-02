@@ -10,14 +10,16 @@
 #define oled_adr 0x78
 #define clock_adr 0x68
 #define al_kol 5
+#define PARSE_AMOUNT 6  
 //-------------------КОНЕЦ-НАСТРОЕК---------------------
 
 //---------------------БИБЛИОТЕКИ-----------------------
 #include <OLED_I2C.h>
-#include "DS3231.h"
+#include "RTClib.h"
 #include "GyverEncoder.h"
 #include <Wire.h>
 #include "GyverTM1637.h"
+//#include <SoftwareSerial.h>
 //------------------КОНЕЦ-БИБЛИОТЕК---------------------
 
 //---------------------СТРУКТУРЫ------------------------
@@ -30,35 +32,60 @@ struct oneAlarm {
 
 Encoder enc1(CLK, DT, SW);  // для работы c кнопкой
 OLED  myOLED(SDA, SCL);
-RTClib rtc;
+RTC_DS3231 rtc;
 GyverTM1637 disp(CLK_tm, DIO);
 
 extern uint8_t SmallFont[];
 
 int value = 0, change = 0;
+int intData[PARSE_AMOUNT];
 byte level = 0, change_time = 0;
 bool inMenu = false, dots = true;
 DateTime t_now, t_prev;
 oneAlarm alarms[al_kol];
+boolean recievedFlag = false;
+boolean getStarted = false;
+byte index;
+String string_convert = "";
+//SoftwareSerial mySerial(2, 3);
 
 const char menu[][maxArrSize] = {"Alarm On/Off", "Settings", "Light"};
 const char settngs_menu[][maxArrSize] = {"Time", "Date", "Alarm set", "Dawn time"};
 
 void setup() {
   Serial.begin(9600);
-  Wire.begin();
+  Serial.println("Starting up");
+  //mySerial.begin(9600);
+  Serial1.begin(9600);
+  rtc.begin();
   t_now = rtc.now();
   t_prev = t_now;
   disp.clear();
   disp.brightness(7);
   disp.displayClock(byte(t_now.hour()), byte(t_now.minute()));
-  if (!myOLED.begin(SSD1306_128X64))
-    while (1);  // In case the library failed to allocate enough RAM for the display buffer...
-
+  if (!myOLED.begin(SSD1306_128X64)){
+    Serial.println("OLED failed");
+    //while (1);
+  } else {
+      // In case the library failed to allocate enough RAM for the display buffer...
+  Serial.println("OLED has inited");  
+  } 
   myOLED.setFont(SmallFont);
   enc1.setTickMode(MANUAL);
   enc1.setType(TYPE2);    // тип энкодера TYPE1 одношаговый, TYPE2 двухшаговый. Если ваш энкодер работает странно, смените тип
   myOLED.clrScr();
+  Serial.print(t_now.hour());
+  Serial.print(' ');
+  Serial.print(t_now.minute());
+  Serial.print(' ');
+  Serial.print(t_now.second());
+  Serial.print(' ');
+  Serial.print(t_now.year());
+  Serial.print(' ');
+  Serial.print(t_now.month());
+  Serial.print(' ');
+  Serial.print(t_now.day());
+  Serial.println(' ');
   /* myOLED.print(F("Main menu"), LEFT, 0);
     for (int i = 0; i < ((kolArr - change > 6) ? 6 : kolArr - change); i++) {
      if (i == 0) {
@@ -69,12 +96,14 @@ void setup() {
     }*/
   myOLED.update();
   disp.point(dots);
+  
 }
 
 void loop() {
   inputTick();
   setupTick();
-  
+  parsing();
+  command_parse();
   t_now = rtc.now();
   /*if (t_now.second() != t_prev.second()){
     disp.point(!dots);
@@ -83,6 +112,62 @@ void loop() {
   if ((t_now.minute() != t_prev.minute()) and (change_time == 0)) {
     disp.displayClock(byte(t_now.hour()), byte(t_now.minute()));
     t_prev = t_now;
+  }
+}
+
+void command_parse(){
+  if (recievedFlag) {                           // если получены данные
+    recievedFlag = false;
+    for (int i = 0; i < index; i++) {
+      Serial.print(intData[i]); Serial.print(" ");
+    
+    }Serial.println();
+    switch(intData[0]) {
+      case 0:
+
+        break;
+
+      case 1:
+        switch(intData[1]) {
+          case 0:
+            t_now = rtc.now();
+            rtc.adjust(DateTime(t_now.year(), t_now.month(), t_now.day(), intData[2], intData[3], intData[4]));
+            t_now = rtc.now();
+            disp.displayClock(byte(t_now.hour()), byte(t_now.minute()));
+            t_prev = t_now;
+            break;
+          case 1:
+            t_now = rtc.now();
+            rtc.adjust(DateTime(intData[2], intData[3], intData[4], t_now.hour(), t_now.minute(), t_now.second()));
+            break;
+        }
+        break;
+    }
+  }
+}
+
+void parsing() {
+  if (Serial1.available() > 0) {
+    Serial.println("Data detected");
+    char incomingByte = Serial1.read();        // обязательно ЧИТАЕМ входящий символ
+    if (getStarted) {                         // если приняли начальный символ (парсинг разрешён)
+      if (incomingByte != ' ' && incomingByte != ';') {   // если это не пробел И не конец
+        string_convert += incomingByte;       // складываем в строку
+      } else {                                // если это пробел или ; конец пакета
+        intData[index] = string_convert.toInt();  // преобразуем строку в int и кладём в массив
+        string_convert = "";                  // очищаем строку
+        index++;                              // переходим к парсингу следующего элемента массива
+      }
+    }
+    if (incomingByte == '$') {                // если это $
+      getStarted = true;                      // поднимаем флаг, что можно парсить
+      index = 0;                              // сбрасываем индекс
+      string_convert = "";                    // очищаем строку
+    }
+    if (incomingByte == ';') {                // если таки приняли ; - конец парсинга
+      getStarted = false;                     // сброс
+      recievedFlag = true;                    // флаг на принятие
+    }
   }
 }
 
