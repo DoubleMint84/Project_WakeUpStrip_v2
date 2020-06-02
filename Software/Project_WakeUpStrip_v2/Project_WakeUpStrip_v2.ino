@@ -138,7 +138,7 @@ void command_parse(){
             break;
           case 1:
             t_now = rtc.now();
-            rtc.adjust(DateTime(intData[2], intData[3], intData[4], t_now.hour(), t_now.minute(), t_now.second()));
+            rtc.adjust(DateTime(intData[4], intData[3], intData[2], t_now.hour(), t_now.minute(), t_now.second()));
             break;
         }
         break;
