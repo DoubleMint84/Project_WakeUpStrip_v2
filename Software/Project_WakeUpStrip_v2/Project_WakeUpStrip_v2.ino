@@ -10,6 +10,7 @@
 #define oled_adr 0x78
 #define clock_adr 0x68
 #define al_kol 5
+#define sd_pin 53
 #define PARSE_AMOUNT 6  
 //-------------------КОНЕЦ-НАСТРОЕК---------------------
 
@@ -19,6 +20,8 @@
 #include "GyverEncoder.h"
 #include <Wire.h>
 #include "GyverTM1637.h"
+#include <SPI.h>
+#include <SD.h>
 //#include <SoftwareSerial.h>
 //------------------КОНЕЦ-БИБЛИОТЕК---------------------
 
@@ -60,6 +63,14 @@ void setup() {
   rtc.begin();
   t_now = rtc.now();
   t_prev = t_now;
+  Serial.print("Initializing SD card...");
+
+  if (!SD.begin(sd_pin)) {
+    Serial.println("initialization failed!");
+    while (1);
+  }
+  Serial.println("initialization done.");
+  dataSdRead();
   disp.clear();
   disp.brightness(7);
   disp.displayClock(byte(t_now.hour()), byte(t_now.minute()));
@@ -74,6 +85,7 @@ void setup() {
   enc1.setTickMode(MANUAL);
   enc1.setType(TYPE2);    // тип энкодера TYPE1 одношаговый, TYPE2 двухшаговый. Если ваш энкодер работает странно, смените тип
   myOLED.clrScr();
+  Serial.println("All systems clear");
   Serial.print(t_now.hour());
   Serial.print(' ');
   Serial.print(t_now.minute());
@@ -297,6 +309,11 @@ void inputTick() {
     else if (enc1.isLeftH()) {
       alarms[change_time - 1].hour--;
       if (alarms[change_time - 1].hour < 0) alarms[change_time - 1].hour = 23;
+    } else if (enc1.isClick()) {
+      change_time = 0;
+      disp.displayClock(byte(t_now.hour()), byte(t_now.minute()));
+      myOLED.clrScr();
+      myOLED.update();
     }
   }
   if (inMenu) {
