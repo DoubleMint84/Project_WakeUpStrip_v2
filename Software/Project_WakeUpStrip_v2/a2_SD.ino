@@ -23,6 +23,11 @@ void dataSdRead() {
     ledPreset.r = byte(myFile.parseInt());
     ledPreset.g = byte(myFile.parseInt());
     ledPreset.b = byte(myFile.parseInt());
+    Serial.print(ledPreset.r);
+    Serial.print(" ");
+    Serial.print(ledPreset.g);
+    Serial.print(' ');
+    Serial.println(ledPreset.b);
     myFile.close();
   } else {
     Serial.println("ERROR: Could not read command file. Program stopped.");
@@ -59,6 +64,11 @@ void writeAlarmToSd(byte event) {
         myFile.println("0");
       }
     }
+    myFile.print(ledPreset.r);
+    myFile.print(' ');
+    myFile.print(ledPreset.g);
+    myFile.print(' ');
+    myFile.println(ledPreset.b);
     myFile.close();
   }
   Serial.println(F("done"));

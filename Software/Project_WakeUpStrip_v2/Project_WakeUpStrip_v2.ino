@@ -21,8 +21,8 @@
 #define buzz 24
 #define ledPin 30
 #define NUMPIXELS 119
-#define dawnTime 3 //в минутах
-#define ledBrightness 150
+#define dawnTime 2 //в минутах
+#define ledBrightness 120
 
 #define DEBUG 1
 //-------------------КОНЕЦ-НАСТРОЕК---------------------
@@ -78,7 +78,7 @@ bool inMenu = false, dots = true, ledActive = false;
 DateTime t_now, t_prev;
 oneAlarm alarms[al_kol];
 LedPreset ledPreset;
-boolean recievedFlag = false;
+boolean recievedFlag = false, lamp = false;
 boolean getStarted = false, blinkBuzz = false;
 byte index;
 String string_convert = "";
@@ -91,8 +91,8 @@ const char settngs_menu[][maxArrSize] = {"Time", "Date", "Alarm set", "Dawn time
 void setup() {
   pixels.setBrightness(ledBrightness);    // яркость (0-255)
   // яркость применяется при выводе .show() !
-  pixels.setMaxCurrent(1800);
-  pixels.setVoltage(5000);  
+  pixels.setMaxCurrent(1600);
+  pixels.setVoltage(5000);
   pixels.clear();   // очищает буфер
   // применяется при выводе .show() !
 
@@ -107,6 +107,9 @@ void setup() {
   //mySerial.begin(9600);
   Serial1.begin(9600);
   rtc.begin();
+  ////
+  rtc.adjust(DateTime(2020, 6, 4, 14, 22, 0));
+  ////
   t_now = rtc.now();
   t_prev = t_now;
 #if (DEBUG == 1)
@@ -154,13 +157,18 @@ void setup() {
   Serial.print(' ');
   Serial.print(t_now.day());
   Serial.println(' ');
-  /* myOLED.print(F("Main menu"), LEFT, 0);
-    for (int i = 0; i < ((kolArr - change > 6) ? 6 : kolArr - change); i++) {
-     if (i == 0) {
-       myOLED.print(String("->") + String(menu[change + i]), LEFT, 8 * (i + 1));
-     } else {
-       myOLED.print(String("  ") + String(menu[change + i]), LEFT, 8 * (i + 1));
-     }
+  if (alarms[0].isActive) {
+    myOLED.print(F("Alarm 1 ON"), LEFT, 0);
+  } else {
+    myOLED.print(F("Alarm 1 OFF"), LEFT, 0);
+  }
+
+  /*for (int i = 0; i < ((kolArr - change > 6) ? 6 : kolArr - change); i++) {
+    if (i == 0) {
+     myOLED.print(String("->") + String(menu[change + i]), LEFT, 8 * (i + 1));
+    } else {
+     myOLED.print(String("  ") + String(menu[change + i]), LEFT, 8 * (i + 1));
+    }
     }*/
   myOLED.update();
   disp.point(dots);
@@ -211,6 +219,33 @@ void command_parse() {
             t_now = rtc.now();
             rtc.adjust(DateTime(intData[4], intData[3], intData[2], t_now.hour(), t_now.minute(), t_now.second()));
             break;
+          case 2:
+            alarms[intData[2]].isActive = !alarms[intData[2]].isActive;
+            writeAlarmToSd(1);
+            inMenu = false;
+            myOLED.clrScr();
+            if (alarms[0].isActive) {
+              myOLED.print(F("Alarm 1 ON"), LEFT, 0);
+            } else {
+              myOLED.print(F("Alarm 1 OFF"), LEFT, 0);
+            }
+            myOLED.update();
+            break;
+        }
+        break;
+      case 2:
+        switch (intData[1]) {
+          case 0:
+            pixels.clear();   // очищает буфер
+            // применяется при выводе .show() !
+
+            pixels.show();
+            break;
+          case 1:
+            pixels.fill(mRGB(intData[2], intData[3], intData[4])); // заливаем жёлтым
+            pixels.show();
+            break;
+
         }
         break;
     }
@@ -289,6 +324,11 @@ void inputTick() {
             writeAlarmToSd(1);
             inMenu = false;
             myOLED.clrScr();
+            if (alarms[0].isActive) {
+              myOLED.print(F("Alarm 1 ON"), LEFT, 0);
+            } else {
+              myOLED.print(F("Alarm 1 OFF"), LEFT, 0);
+            }
             myOLED.update();
           }
           else if (change == 1) {
@@ -304,9 +344,26 @@ void inputTick() {
               }
             }
             myOLED.update();
+          } else if (change == 2) {
+            if (!lamp) {
+              lamp = !lamp;
+              rgbSetPreset();
+            } else {
+              lamp = !lamp;
+              pixels.clear();   // очищает буфер
+              // применяется при выводе .show() !
+
+              pixels.show();
+            }
+
           } else {
             inMenu = false;
             myOLED.clrScr();
+            if (alarms[0].isActive) {
+              myOLED.print(F("Alarm 1 ON"), LEFT, 0);
+            } else {
+              myOLED.print(F("Alarm 1 OFF"), LEFT, 0);
+            }
             myOLED.update();
           }
           break;
@@ -325,12 +382,16 @@ void inputTick() {
           } else {
             inMenu = false;
             myOLED.clrScr();
+            if (alarms[0].isActive) {
+              myOLED.print(F("Alarm 1 ON"), LEFT, 0);
+            } else {
+              myOLED.print(F("Alarm 1 OFF"), LEFT, 0);
+            }
             myOLED.update();
           }
           break;
-        case 2:
-          rgbSetPreset();
-          break;
+
+
       }
 
     } else if (change_time == 0) {
@@ -387,6 +448,11 @@ void inputTick() {
       Serial.println(alarms[change_time - 1].dawnMin);
       disp.displayClock(byte(t_now.hour()), byte(t_now.minute()));
       myOLED.clrScr();
+      if (alarms[0].isActive) {
+        myOLED.print(F("Alarm 1 ON"), LEFT, 0);
+      } else {
+        myOLED.print(F("Alarm 1 OFF"), LEFT, 0);
+      }
       myOLED.update();
       change_time = 0;
     }
@@ -411,6 +477,11 @@ void inputTick() {
       digitalWrite(buzz, blinkBuzz);
       alarmRaise = -1;
       myOLED.clrScr();
+      if (alarms[0].isActive) {
+        myOLED.print(F("Alarm 1 ON"), LEFT, 0);
+      } else {
+        myOLED.print(F("Alarm 1 OFF"), LEFT, 0);
+      }
       myOLED.update();
       pixels.clear();   // очищает буфер
       // применяется при выводе .show() !
