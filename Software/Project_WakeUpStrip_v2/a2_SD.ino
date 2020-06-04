@@ -20,6 +20,9 @@ void dataSdRead() {
       }
 
     }
+    ledPreset.r = byte(myFile.parseInt());
+    ledPreset.g = byte(myFile.parseInt());
+    ledPreset.b = byte(myFile.parseInt());
     myFile.close();
   } else {
     Serial.println("ERROR: Could not read command file. Program stopped.");

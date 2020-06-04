@@ -15,6 +15,10 @@
 #define sd_pin 53
 #define PARSE_AMOUNT 6  
 #define butPin 22
+#define buzz 24
+#define ledPin 30
+#define NUMPIXELS 119
+#define dawnTime 5 //в минутах
 //-------------------КОНЕЦ-НАСТРОЕК---------------------
 
 //---------------------БИБЛИОТЕКИ-----------------------
@@ -26,6 +30,7 @@
 #include "GyverTM1637.h"
 #include <SPI.h>
 #include <SD.h>
+#include <Adafruit_NeoPixel.h>
 //#include <SoftwareSerial.h>
 //------------------КОНЕЦ-БИБЛИОТЕК---------------------
 
@@ -33,8 +38,17 @@
 struct oneAlarm {
   int8_t hour;
   int8_t minute;
+  int8_t dawnHour;
+  int8_t dawnMin;
   bool isActive;
 };
+
+struct LedPreset {
+  byte r;
+  byte g;
+  byte b;
+};
+
 //-------------------КОНЕЦ-СТРУКТУР---------------------
 
 Encoder enc1(CLK, DT, SW);  // для работы c кнопкой
@@ -42,27 +56,36 @@ OLED  myOLED(SDA, SCL);
 RTC_DS3231 rtc;
 GyverTM1637 disp(CLK_tm, DIO);
 GButton but(butPin);
+Adafruit_NeoPixel pixels(NUMPIXELS, ledPin, NEO_GRB + NEO_KHZ800);
 
 extern uint8_t SmallFont[];
 
-int value = 0, change = 0;
+const long dawnStep = (long(dawnTime) * long(60000)) / 750;
+unsigned long lightTime = 0;
+int ledR = 0, ledG = 0, ledB = 0;
+int value = 0, change = 0, alarmRaise = -1;
 int intData[PARSE_AMOUNT];
 byte level = 0, change_time = 0;
-bool inMenu = false, dots = true;
+bool inMenu = false, dots = true, ledActive = false;
 DateTime t_now, t_prev;
 oneAlarm alarms[al_kol];
+LedPreset ledPreset;
 boolean recievedFlag = false;
-boolean getStarted = false;
+boolean getStarted = false, blinkBuzz = false;
 byte index;
 String string_convert = "";
+unsigned long timerAlarm;
 //SoftwareSerial mySerial(2, 3);
 
 const char menu[][maxArrSize] = {"Alarm On/Off", "Settings", "Light"};
 const char settngs_menu[][maxArrSize] = {"Time", "Date", "Alarm set", "Dawn time"};
 
 void setup() {
+  pinMode(buzz, OUTPUT);
   Serial.begin(9600);
-  Serial.println("Starting up");
+  Serial.println(F("///////////////////////////////////"));
+  Serial.println(F("Starting up"));
+  Serial.println(dawnStep);
   //mySerial.begin(9600);
   Serial1.begin(9600);
   rtc.begin();
@@ -76,6 +99,7 @@ void setup() {
   }
   Serial.println("initialization done.");
   dataSdRead();
+  calcDawn();
   disp.clear();
   disp.brightness(7);
   disp.displayClock(byte(t_now.hour()), byte(t_now.minute()));
@@ -95,6 +119,9 @@ void setup() {
   enc1.setTickMode(MANUAL);
   enc1.setType(TYPE2);    // тип энкодера TYPE1 одношаговый, TYPE2 двухшаговый. Если ваш энкодер работает странно, смените тип
   myOLED.clrScr();
+  pixels.begin();
+  pixels.clear(); 
+  pixels.show();
   Serial.println("All systems clear");
   Serial.print(t_now.hour());
   Serial.print(' ');
@@ -126,11 +153,14 @@ void loop() {
   setupTick();
   parsing();
   command_parse();
+  
   t_now = rtc.now();
   /*if (t_now.second() != t_prev.second()){
     disp.point(!dots);
     dots = !dots;
     }*/
+  alarmTick();
+  dawnTick();
   if ((t_now.minute() != t_prev.minute()) and (change_time == 0)) {
     disp.displayClock(byte(t_now.hour()), byte(t_now.minute()));
     t_prev = t_now;
@@ -269,7 +299,8 @@ void inputTick() {
             myOLED.clrScr();
             myOLED.print(F("Alarm 1 setting"), CENTER, 0);
             myOLED.print(F("Set the time"), CENTER, 16);
-            myOLED.print(F("on 7-segment disp"), CENTER, 24); 
+            myOLED.print(F("on 7-segment disp."), CENTER, 24); 
+            myOLED.print(F("Then push the OK"), CENTER, 32); 
             myOLED.update();
             disp.displayClock(byte(alarms[0].hour), byte(alarms[0].minute));
           } else {
@@ -277,6 +308,9 @@ void inputTick() {
             myOLED.clrScr();
             myOLED.update();
           }
+          break;
+        case 2:
+          rgbSetPreset();
           break;
       }
 
@@ -326,6 +360,12 @@ void inputTick() {
     }
     if (but.isClick()) {
       writeAlarmToSd(0);
+      calcDawn();
+      Serial.print(change_time);
+      Serial.print(" alarm: calc dawn ");
+      Serial.print(alarms[change_time - 1].dawnHour);
+      Serial.print(':');
+      Serial.println(alarms[change_time - 1].dawnMin);
       disp.displayClock(byte(t_now.hour()), byte(t_now.minute()));
       myOLED.clrScr();
       myOLED.update();
@@ -344,5 +384,14 @@ void inputTick() {
         break;
     }
 
+  }
+  if (alarmRaise != -1) {
+    if(but.isDouble()) {
+      blinkBuzz = false;
+      digitalWrite(buzz, blinkBuzz);
+      alarmRaise = -1;
+      myOLED.clrScr();
+      myOLED.update();
+    }
   }
 }
