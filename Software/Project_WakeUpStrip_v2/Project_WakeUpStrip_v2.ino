@@ -1,6 +1,9 @@
 
 
 //----------------------НАСТРОЙКИ-----------------------
+#define ORDER_RGB       // порядок цветов ORDER_GRB / ORDER_RGB / ORDER_BRG
+
+#define COLOR_DEBTH 2
 #define CLK 9
 #define DT 10
 #define CLK_tm 7
@@ -13,12 +16,15 @@
 #define clock_adr 0x68
 #define al_kol 5
 #define sd_pin 53
-#define PARSE_AMOUNT 6  
+#define PARSE_AMOUNT 6
 #define butPin 22
 #define buzz 24
 #define ledPin 30
 #define NUMPIXELS 119
-#define dawnTime 5 //в минутах
+#define dawnTime 3 //в минутах
+#define ledBrightness 150
+
+#define DEBUG 1
 //-------------------КОНЕЦ-НАСТРОЕК---------------------
 
 //---------------------БИБЛИОТЕКИ-----------------------
@@ -30,7 +36,8 @@
 #include "GyverTM1637.h"
 #include <SPI.h>
 #include <SD.h>
-#include <Adafruit_NeoPixel.h>
+//#include <Adafruit_NeoPixel.h>
+#include <microLED.h>
 //#include <SoftwareSerial.h>
 //------------------КОНЕЦ-БИБЛИОТЕК---------------------
 
@@ -50,13 +57,14 @@ struct LedPreset {
 };
 
 //-------------------КОНЕЦ-СТРУКТУР---------------------
-
+LEDdata leds[NUMPIXELS];  // буфер ленты типа LEDdata (размер зависит от COLOR_DEBTH)
+microLED pixels(leds, NUMPIXELS, ledPin);
 Encoder enc1(CLK, DT, SW);  // для работы c кнопкой
 OLED  myOLED(SDA, SCL);
 RTC_DS3231 rtc;
 GyverTM1637 disp(CLK_tm, DIO);
 GButton but(butPin);
-Adafruit_NeoPixel pixels(NUMPIXELS, ledPin, NEO_GRB + NEO_KHZ800);
+//Adafruit_NeoPixel pixels(NUMPIXELS, ledPin, NEO_GRB + NEO_KHZ800);
 
 extern uint8_t SmallFont[];
 
@@ -81,47 +89,58 @@ const char menu[][maxArrSize] = {"Alarm On/Off", "Settings", "Light"};
 const char settngs_menu[][maxArrSize] = {"Time", "Date", "Alarm set", "Dawn time"};
 
 void setup() {
+  pixels.setBrightness(ledBrightness);    // яркость (0-255)
+  // яркость применяется при выводе .show() !
+  pixels.setMaxCurrent(1800);
+  pixels.setVoltage(5000);  
+  pixels.clear();   // очищает буфер
+  // применяется при выводе .show() !
+
+  pixels.show();
   pinMode(buzz, OUTPUT);
+#if (DEBUG == 1)
   Serial.begin(9600);
   Serial.println(F("///////////////////////////////////"));
   Serial.println(F("Starting up"));
   Serial.println(dawnStep);
+#endif
   //mySerial.begin(9600);
   Serial1.begin(9600);
   rtc.begin();
   t_now = rtc.now();
   t_prev = t_now;
+#if (DEBUG == 1)
   Serial.print("Initializing SD card...");
-
+#endif
   if (!SD.begin(sd_pin)) {
-    Serial.println("initialization failed!");
+    //Serial.println("initialization failed!");
     while (1);
   }
-  Serial.println("initialization done.");
+  //Serial.println("initialization done.");
   dataSdRead();
   calcDawn();
   disp.clear();
   disp.brightness(7);
   disp.displayClock(byte(t_now.hour()), byte(t_now.minute()));
-  if (!myOLED.begin(SSD1306_128X64)){
+  if (!myOLED.begin(SSD1306_128X64)) {
     Serial.println("OLED failed");
     //while (1);
   } else {
-      // In case the library failed to allocate enough RAM for the display buffer...
-  Serial.println("OLED has inited");  
-  } 
+    // In case the library failed to allocate enough RAM for the display buffer...
+    Serial.println("OLED has inited");
+  }
   myOLED.setFont(SmallFont);
   but.setDebounce(50);        // настройка антидребезга (по умолчанию 80 мс)
   but.setTimeout(300);        // настройка таймаута на удержание (по умолчанию 500 мс)
-  but.setClickTimeout(600); 
+  but.setClickTimeout(600);
   but.setType(LOW_PULL);
   but.setDirection(NORM_OPEN);
   enc1.setTickMode(MANUAL);
   enc1.setType(TYPE2);    // тип энкодера TYPE1 одношаговый, TYPE2 двухшаговый. Если ваш энкодер работает странно, смените тип
   myOLED.clrScr();
-  pixels.begin();
-  pixels.clear(); 
-  pixels.show();
+  //pixels.begin();
+  //pixels.clear();
+  //pixels.show();
   Serial.println("All systems clear");
   Serial.print(t_now.hour());
   Serial.print(' ');
@@ -145,7 +164,7 @@ void setup() {
     }*/
   myOLED.update();
   disp.point(dots);
-  
+
 }
 
 void loop() {
@@ -153,7 +172,7 @@ void loop() {
   setupTick();
   parsing();
   command_parse();
-  
+
   t_now = rtc.now();
   /*if (t_now.second() != t_prev.second()){
     disp.point(!dots);
@@ -167,20 +186,20 @@ void loop() {
   }
 }
 
-void command_parse(){
+void command_parse() {
   if (recievedFlag) {                           // если получены данные
     recievedFlag = false;
     for (int i = 0; i < index; i++) {
       Serial.print(intData[i]); Serial.print(" ");
-    
-    }Serial.println();
-    switch(intData[0]) {
+
+    } Serial.println();
+    switch (intData[0]) {
       case 0:
 
         break;
 
       case 1:
-        switch(intData[1]) {
+        switch (intData[1]) {
           case 0:
             t_now = rtc.now();
             rtc.adjust(DateTime(t_now.year(), t_now.month(), t_now.day(), intData[2], intData[3], intData[4]));
@@ -299,8 +318,8 @@ void inputTick() {
             myOLED.clrScr();
             myOLED.print(F("Alarm 1 setting"), CENTER, 0);
             myOLED.print(F("Set the time"), CENTER, 16);
-            myOLED.print(F("on 7-segment disp."), CENTER, 24); 
-            myOLED.print(F("Then push the OK"), CENTER, 32); 
+            myOLED.print(F("on 7-segment disp."), CENTER, 24);
+            myOLED.print(F("Then push the OK"), CENTER, 32);
             myOLED.update();
             disp.displayClock(byte(alarms[0].hour), byte(alarms[0].minute));
           } else {
@@ -330,7 +349,7 @@ void inputTick() {
       myOLED.update();
 
     } else {
-      
+
     }
   }
   if (change_time == 1) {
@@ -386,12 +405,17 @@ void inputTick() {
 
   }
   if (alarmRaise != -1) {
-    if(but.isDouble()) {
+    if (but.isDouble()) {
       blinkBuzz = false;
+      ledActive = false;
       digitalWrite(buzz, blinkBuzz);
       alarmRaise = -1;
       myOLED.clrScr();
       myOLED.update();
+      pixels.clear();   // очищает буфер
+      // применяется при выводе .show() !
+
+      pixels.show();
     }
   }
 }

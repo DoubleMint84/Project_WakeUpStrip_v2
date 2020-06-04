@@ -1,19 +1,18 @@
 void rgbSetPreset () {
   if (!ledActive) {
-    for (int i = 0; i < NUMPIXELS; i++) {
-      pixels.setPixelColor(i, pixels.Color(ledPreset.r, ledPreset.g, ledPreset.b));
-    }
+
+    pixels.fill(mRGB(ledPreset.r, ledPreset.g, ledPreset.b)); // заливаем жёлтым
     pixels.show();
   }
 }
-
-void fillColor(uint32_t c) {
+/*
+  void fillColor(uint32_t c) {
   for (uint16_t i = 0; i < pixels.numPixels(); i++) {
     // заполняем текущий сегмент выбранным цветом
     pixels.setPixelColor(i, c);
     pixels.show();
   }
-}
+  }*/
 
 void calcDawn() {
   for (int i = 0; i < al_kol; i++) {
@@ -46,7 +45,9 @@ void dawnTick() {
         Serial.print(ledR);
         Serial.print(' ');
         Serial.println(ledG);
-        fillColor(pixels.Color(ledR, ledG, 0));
+        //fillColor(pixels.Color(ledR, ledG, 0));
+        pixels.fill(mRGB(ledR, ledG, 0)); // заливаем жёлтым
+        pixels.show();
         ledG++;
         lightTime = millis();
       }
@@ -57,7 +58,8 @@ void dawnTick() {
         Serial.print(ledR);
         Serial.print(' ');
         Serial.println(ledG);
-        fillColor(pixels.Color(ledR, ledG, 0));
+        pixels.fill(mRGB(ledR, ledG, 0)); // заливаем жёлтым
+        pixels.show();
         ledR++;
         lightTime = millis();
       }
@@ -65,11 +67,13 @@ void dawnTick() {
     // плавно гасим Зеленый
     if (ledR == 255) {
       if (millis() - lightTime > dawnStep) {
-        Serial.print(ledR);
-        Serial.print(' ');
-        Serial.println(ledG);
-        fillColor(pixels.Color(ledR, ledG, 0));
+
         if (ledG != 0) {
+          Serial.print(ledR);
+          Serial.print(' ');
+          Serial.println(ledG);
+          pixels.fill(mRGB(ledR, ledG, 0)); // заливаем жёлтым
+          pixels.show();
           ledG--;
         }
         lightTime = millis();
