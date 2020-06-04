@@ -1,3 +1,5 @@
+
+
 //----------------------НАСТРОЙКИ-----------------------
 #define CLK 9
 #define DT 10
@@ -12,11 +14,13 @@
 #define al_kol 5
 #define sd_pin 53
 #define PARSE_AMOUNT 6  
+#define butPin 22
 //-------------------КОНЕЦ-НАСТРОЕК---------------------
 
 //---------------------БИБЛИОТЕКИ-----------------------
 #include <OLED_I2C.h>
 #include "RTClib.h"
+#include <GyverButton.h>
 #include "GyverEncoder.h"
 #include <Wire.h>
 #include "GyverTM1637.h"
@@ -37,6 +41,7 @@ Encoder enc1(CLK, DT, SW);  // для работы c кнопкой
 OLED  myOLED(SDA, SCL);
 RTC_DS3231 rtc;
 GyverTM1637 disp(CLK_tm, DIO);
+GButton but(butPin);
 
 extern uint8_t SmallFont[];
 
@@ -82,6 +87,11 @@ void setup() {
   Serial.println("OLED has inited");  
   } 
   myOLED.setFont(SmallFont);
+  but.setDebounce(50);        // настройка антидребезга (по умолчанию 80 мс)
+  but.setTimeout(300);        // настройка таймаута на удержание (по умолчанию 500 мс)
+  but.setClickTimeout(600); 
+  but.setType(LOW_PULL);
+  but.setDirection(NORM_OPEN);
   enc1.setTickMode(MANUAL);
   enc1.setType(TYPE2);    // тип энкодера TYPE1 одношаговый, TYPE2 двухшаговый. Если ваш энкодер работает странно, смените тип
   myOLED.clrScr();
@@ -220,13 +230,17 @@ void setupTick() {
 
 void inputTick() {
   enc1.tick();
+  but.tick();
   if (enc1.isClick()) {
     if (inMenu) {
       switch (level) {
         case 0:
           if (change == 0) {
-            alarms[1].isActive = !alarms[1].isActive;
+            alarms[0].isActive = !alarms[0].isActive;
+            writeAlarmToSd(1);
             inMenu = false;
+            myOLED.clrScr();
+            myOLED.update();
           }
           else if (change == 1) {
             level = 1;
@@ -309,11 +323,13 @@ void inputTick() {
     else if (enc1.isLeftH()) {
       alarms[change_time - 1].hour--;
       if (alarms[change_time - 1].hour < 0) alarms[change_time - 1].hour = 23;
-    } else if (enc1.isClick()) {
-      change_time = 0;
+    }
+    if (but.isClick()) {
+      writeAlarmToSd(0);
       disp.displayClock(byte(t_now.hour()), byte(t_now.minute()));
       myOLED.clrScr();
       myOLED.update();
+      change_time = 0;
     }
   }
   if (inMenu) {

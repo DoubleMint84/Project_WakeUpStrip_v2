@@ -18,11 +18,45 @@ void dataSdRead() {
       } else {
         Serial.println(" OFF");
       }
-      
+
     }
+    myFile.close();
   } else {
     Serial.println("ERROR: Could not read command file. Program stopped.");
     return;
   }
   Serial.println("Data has written");
+}
+
+void writeAlarmToSd(byte event) {
+  switch (event) {
+    case 0:
+      Serial.print(change_time);
+      Serial.print(F(" alarm: set time to "));
+      Serial.print(alarms[change_time - 1].hour);
+      Serial.print(':');
+      Serial.print(alarms[change_time - 1].minute);
+      Serial.print(F(". Writing to file..."));
+      break;
+    case 1:
+      Serial.print(F("1 alarm: changing state..."));
+  }
+
+  SD.remove("data.txt");
+  File myFile = SD.open("data.txt", FILE_WRITE);
+  if (myFile) {
+    for (int i = 0; i < al_kol; i++) {
+      myFile.print(alarms[i].hour);
+      myFile.print(' ');
+      myFile.print(alarms[i].minute);
+      myFile.print(' ');
+      if (alarms[i].isActive) {
+        myFile.println("1");
+      } else {
+        myFile.println("0");
+      }
+    }
+    myFile.close();
+  }
+  Serial.println(F("done"));
 }
