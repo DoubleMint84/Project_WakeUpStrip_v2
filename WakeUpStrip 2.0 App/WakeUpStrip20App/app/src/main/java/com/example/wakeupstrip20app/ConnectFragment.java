@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -47,6 +48,17 @@ public class ConnectFragment extends Fragment {
                     }
                     pairedDeviceAdapter = new ArrayAdapter<>(inflater.getContext(), simple_list_item_1, pairedDeviceArrayList);
                     listViewPairedDevice.setAdapter(pairedDeviceAdapter);
+                    listViewPairedDevice.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                        @Override
+                        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                            listViewPairedDevice.setEnabled(false);
+                            String  itemValue = (String) listViewPairedDevice.getItemAtPosition(position);
+                            String MAC = itemValue.substring(itemValue.length() - 17);
+                            BluetoothDevice device2 = MainActivity.bluetoothAdapter.getRemoteDevice(MAC);
+                            MainActivity.myThreadConnectBTDevice.setSocket(device2);
+                            MainActivity.myThreadConnectBTDevice.start();
+                        }
+                    });
                 }
             }
         });
