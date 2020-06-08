@@ -28,7 +28,7 @@ import java.util.UUID;
 
 import static android.R.layout.simple_list_item_1;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements ConnectFragment.onSomeEventListener {
 
     public static BluetoothAdapter bluetoothAdapter;
     public static ThreadConnectBTdevice myThreadConnectBTDevice;
@@ -41,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        myThreadConnectBTDevice = new ThreadConnectBTdevice();
+        //myThreadConnectBTDevice = new ThreadConnectBTdevice();
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH)){
             Toast.makeText(this, "BLUETOOTH NOT support", Toast.LENGTH_LONG).show();
             //finish();
@@ -111,13 +111,15 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    @Override
+    public void someEvent(BluetoothDevice device) {
+        myThreadConnectBTDevice = new ThreadConnectBTdevice(device);
+        myThreadConnectBTDevice.start();
+    }
+
     public class ThreadConnectBTdevice extends Thread { // Поток для коннекта с Bluetooth
         private BluetoothSocket bluetoothSocket = null;
-        ThreadConnectBTdevice() {
-
-        }
-
-        public void setSocket(BluetoothDevice device) {
+        ThreadConnectBTdevice(BluetoothDevice device) {
             try {
                 bluetoothSocket = device.createRfcommSocketToServiceRecord(myUUID);
             }
@@ -125,7 +127,6 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
-
 
         @Override
         public void run() { // Коннект

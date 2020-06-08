@@ -2,6 +2,7 @@ package com.example.wakeupstrip20app;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.os.Bundle;
@@ -31,6 +32,23 @@ public class ConnectFragment extends Fragment {
     ArrayList<String> pairedDeviceArrayList;
     ArrayAdapter pairedDeviceAdapter;
 
+    public interface onSomeEventListener {
+        public void someEvent(BluetoothDevice device);
+    }
+
+    onSomeEventListener someEventListener;
+
+    @Override
+    public void onAttach(@NonNull Activity activity) {
+        super.onAttach(activity);
+        try {
+            someEventListener = (onSomeEventListener) activity;
+
+        } catch (ClassCastException e) {
+            throw new ClassCastException(activity.toString() + " must implement onSomeEventListener");
+        }
+    }
+
     @Nullable
     @Override
     public View onCreateView(@NonNull final LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -55,8 +73,9 @@ public class ConnectFragment extends Fragment {
                             String  itemValue = (String) listViewPairedDevice.getItemAtPosition(position);
                             String MAC = itemValue.substring(itemValue.length() - 17);
                             BluetoothDevice device2 = MainActivity.bluetoothAdapter.getRemoteDevice(MAC);
-                            MainActivity.myThreadConnectBTDevice.setSocket(device2);
-                            MainActivity.myThreadConnectBTDevice.start();
+                            someEventListener.someEvent(device2);
+                            //MainActivity.myThreadConnectBTDevice.setSocket(device2);
+                            //MainActivity.myThreadConnectBTDevice.start();
                         }
                     });
                 }
