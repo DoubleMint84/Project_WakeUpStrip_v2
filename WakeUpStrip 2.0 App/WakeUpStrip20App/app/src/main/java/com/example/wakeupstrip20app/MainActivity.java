@@ -140,11 +140,12 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         Toast.makeText(getApplicationContext(), "Нет коннекта, проверьте Bluetooth-устройство с которым хотите соединица!", Toast.LENGTH_LONG).show();
-                        Fragment conFrag = getSupportFragmentManager().findFragmentById(R.id.fragment_con);
+                        Fragment conFrag = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
                         ((ListView) conFrag.getView().findViewById(R.id.listDevices)).setEnabled(true);
-                        //ConnectFragment.listViewPairedDevice.setVisibility(View.VISIBLE);
                     }
                 });
+
+                //ConnectFragment.listViewPairedDevice.setVisibility(View.VISIBLE);
                 try {
                     bluetoothSocket.close();
                 }
@@ -157,6 +158,7 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void run() {
+                        Toast.makeText(getApplicationContext(), "Connected", Toast.LENGTH_LONG).show();
                         //ButPanel.setVisibility(View.VISIBLE); // открываем панель с кнопками
                     }
                 });
