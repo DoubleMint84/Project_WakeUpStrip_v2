@@ -140,7 +140,7 @@ public class MainActivity extends AppCompatActivity implements ConnectFragment.o
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        Toast.makeText(getApplicationContext(), "Нет коннекта, проверьте Bluetooth-устройство с которым хотите соединица!", Toast.LENGTH_LONG).show();
+                        Toast.makeText(getApplicationContext(), "Not connected, try again", Toast.LENGTH_LONG).show();
                         Fragment conFrag = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
                         ((ListView) conFrag.getView().findViewById(R.id.listDevices)).setEnabled(true);
                     }
