@@ -28,7 +28,7 @@ import java.util.UUID;
 
 import static android.R.layout.simple_list_item_1;
 
-public class MainActivity extends AppCompatActivity implements ConnectFragment.onSomeEventListener {
+public class MainActivity extends AppCompatActivity implements ConnectFragment.onSomeEventListener, LampFragment.onLampListener {
 
     public static BluetoothAdapter bluetoothAdapter;
     public static ThreadConnectBTdevice myThreadConnectBTDevice;
@@ -115,6 +115,22 @@ public class MainActivity extends AppCompatActivity implements ConnectFragment.o
     public void someEvent(BluetoothDevice device) {
         myThreadConnectBTDevice = new ThreadConnectBTdevice(device);
         myThreadConnectBTDevice.start();
+    }
+
+    @Override
+    public void changeColor(int red, int green, int blue) {
+        if (myThreadConnected != null) {
+            byte[] bytesToSend = ("$2 1 " + String.valueOf(red) + " " + String.valueOf(green) + " " + String.valueOf(blue) + ";").getBytes();
+            myThreadConnected.write(bytesToSend );
+        }
+    }
+
+    @Override
+    public void offLed() {
+        if (myThreadConnected != null) {
+            byte[] bytesToSend = ("$2 0;").getBytes();
+            myThreadConnected.write(bytesToSend );
+        }
     }
 
     public class ThreadConnectBTdevice extends Thread { // Поток для коннекта с Bluetooth
