@@ -36,6 +36,7 @@ public class MainActivity extends AppCompatActivity implements ConnectFragment.o
     public static UUID myUUID;
     public final String UUID_STRING_WELL_KNOWN_SPP = "00001101-0000-1000-8000-00805F9B34FB";
     private static final int REQUEST_ENABLE_BT = 1;
+    private StringBuilder sb = new StringBuilder();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -182,6 +183,8 @@ public class MainActivity extends AppCompatActivity implements ConnectFragment.o
 
                 myThreadConnected = new ThreadConnected(bluetoothSocket);
                 myThreadConnected.start(); // запуск потока приёма и отправки данных
+                byte[] bytesToSend = ("$0;").getBytes();
+                myThreadConnected.write(bytesToSend);
             }
         }
 
@@ -223,7 +226,7 @@ public class MainActivity extends AppCompatActivity implements ConnectFragment.o
 
         @Override
         public void run() { // Приём данных
-            /* while (true) {
+             while (true) {
                 try {
                     byte[] buffer = new byte[1];
                     int bytes = connectedInputStream.read(buffer);
@@ -240,26 +243,18 @@ public class MainActivity extends AppCompatActivity implements ConnectFragment.o
                                 switch (sbprint) {
 
                                     case "D10 ON":
-                                        Toast.makeText(MainActivity.this, sbprint, Toast.LENGTH_SHORT).show();
-                                        break;
+
+                                    case "D12 OFF":
+
+                                    case "D12 ON":
 
                                     case "D10 OFF":
-                                        Toast.makeText(MainActivity.this, sbprint, Toast.LENGTH_SHORT).show();
-                                        break;
 
                                     case "D11 ON":
                                         Toast.makeText(MainActivity.this, sbprint, Toast.LENGTH_SHORT).show();
                                         break;
 
                                     case "D11 OFF":
-                                        Toast.makeText(MainActivity.this, sbprint, Toast.LENGTH_SHORT).show();
-                                        break;
-
-                                    case "D12 ON":
-                                        Toast.makeText(MainActivity.this, sbprint, Toast.LENGTH_SHORT).show();
-                                        break;
-
-                                    case "D12 OFF":
                                         Toast.makeText(MainActivity.this, sbprint, Toast.LENGTH_SHORT).show();
                                         break;
 
@@ -280,7 +275,7 @@ public class MainActivity extends AppCompatActivity implements ConnectFragment.o
                 } catch (IOException e) {
                     break;
                 }
-            } */
+            }
         }
 
 
