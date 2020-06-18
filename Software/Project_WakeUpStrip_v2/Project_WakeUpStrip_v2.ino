@@ -20,9 +20,9 @@
 #define butPin 22
 #define buzz 24
 #define ledPin 30
-#define NUMPIXELS 119
+#define NUMPIXELS 15
 #define dawnTime 2 //в минутах
-#define ledBrightness 120
+#define ledBrightness 255
 
 #define DEBUG 1
 //-------------------КОНЕЦ-НАСТРОЕК---------------------
@@ -108,7 +108,7 @@ void setup() {
   Serial1.begin(9600);
   rtc.begin();
   ////
-  rtc.adjust(DateTime(2020, 6, 4, 14, 22, 0));
+  //rtc.adjust(DateTime(2020, 6, 4, 14, 22, 0));
   ////
   t_now = rtc.now();
   t_prev = t_now;
@@ -242,7 +242,7 @@ void command_parse() {
             pixels.show();
             break;
           case 1:
-            pixels.fill(mRGB(intData[2], intData[3], intData[4])); // заливаем жёлтым
+            pixels.fill(mRGB(intData[3], intData[2], intData[4])); // заливаем жёлтым
             pixels.show();
             break;
 
