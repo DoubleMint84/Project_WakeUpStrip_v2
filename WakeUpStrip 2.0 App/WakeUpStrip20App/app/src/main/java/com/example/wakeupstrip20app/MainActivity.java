@@ -3,9 +3,11 @@ package com.example.wakeupstrip20app;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 
 import android.app.Activity;
+import android.app.TimePickerDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -15,7 +17,9 @@ import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
+import android.widget.TimePicker;
 import android.widget.Toast;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -28,7 +32,7 @@ import java.util.UUID;
 
 import static android.R.layout.simple_list_item_1;
 
-public class MainActivity extends AppCompatActivity implements ConnectFragment.onSomeEventListener, LampFragment.onLampListener {
+public class MainActivity extends AppCompatActivity implements ConnectFragment.onSomeEventListener, LampFragment.onLampListener, AlarmsFragment.onAlarmListener {
 
     public static BluetoothAdapter bluetoothAdapter;
     public static ThreadConnectBTdevice myThreadConnectBTDevice;
@@ -37,12 +41,23 @@ public class MainActivity extends AppCompatActivity implements ConnectFragment.o
     public final String UUID_STRING_WELL_KNOWN_SPP = "00001101-0000-1000-8000-00805F9B34FB";
     private static final int REQUEST_ENABLE_BT = 1;
     private StringBuilder sb = new StringBuilder();
+    public int currentAl = 0;
+
+
+    public AlarmRecord[] alarmRecord = new AlarmRecord[5];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         //myThreadConnectBTDevice = new ThreadConnectBTdevice();
+        for (int i = 0; i < 5; i++) {
+            alarmRecord[i] = new AlarmRecord();
+            alarmRecord[i].hrs = 0;
+            alarmRecord[i].min = 0;
+            alarmRecord[i].state = false;
+        }
+
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH)){
             Toast.makeText(this, "BLUETOOTH NOT support", Toast.LENGTH_LONG).show();
             //finish();
@@ -133,6 +148,65 @@ public class MainActivity extends AppCompatActivity implements ConnectFragment.o
             myThreadConnected.write(bytesToSend );
         }
     }
+
+    @Override
+    public String getTime(int num) {
+        if (alarmRecord[num].min > 9) {
+            return Integer.toString(alarmRecord[num].hrs) + ":" + Integer.toString(alarmRecord[num].min);
+        } else {
+            return Integer.toString(alarmRecord[num].hrs) + ":0" + Integer.toString(alarmRecord[num].min);
+        }
+
+    }
+
+    @Override
+    public boolean getState(int num) {
+        return alarmRecord[num].state;
+    }
+
+    @Override
+    public void changeTime(int num) {
+        /*DialogFragment timePicker = new TimePickerFragment();
+        timePicker.show(getSupportFragmentManager(), "time picker");*/
+        currentAl = num;
+        new TimePickerDialog(MainActivity.this, tPick, alarmRecord[num].hrs, alarmRecord[num].min, true).show();
+
+    }
+
+    TimePickerDialog.OnTimeSetListener tPick = new TimePickerDialog.OnTimeSetListener() {
+        @Override
+        public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
+            alarmRecord[currentAl].hrs = hourOfDay;
+            alarmRecord[currentAl].min = minute;
+            Button but;
+            switch (currentAl) {
+                case 0:
+                    but = findViewById(R.id.butAlFirst);
+                    break;
+                case 1:
+                    but = findViewById(R.id.butAlSecond);
+                    break;
+                case 2:
+                    but = findViewById(R.id.butAlThird);
+                    break;
+                case 3:
+                    but = findViewById(R.id.butAlForth);
+                    break;
+                case 4:
+                    but = findViewById(R.id.butAlFifth);
+                    break;
+                default:
+                    but = findViewById(R.id.butAlFirst);
+                    break;
+            }
+            if (alarmRecord[currentAl].min > 9) {
+                but.setText(Integer.toString(alarmRecord[currentAl].hrs) + ":" + Integer.toString(alarmRecord[currentAl].min));
+            } else {
+                but.setText(Integer.toString(alarmRecord[currentAl].hrs) + ":0" + Integer.toString(alarmRecord[currentAl].min));
+            }
+
+        }
+    };
 
     public class ThreadConnectBTdevice extends Thread { // Поток для коннекта с Bluetooth
         private BluetoothSocket bluetoothSocket = null;
@@ -228,7 +302,7 @@ public class MainActivity extends AppCompatActivity implements ConnectFragment.o
         public void run() { // Приём данных
              while (true) {
                 try {
-                    byte[] buffer = new byte[1];
+                    /*byte[] buffer = new byte[1];
                     int bytes = connectedInputStream.read(buffer);
                     String strIncom = new String(buffer, 0, bytes);
                     sb.append(strIncom); // собираем символы в строку
@@ -271,6 +345,35 @@ public class MainActivity extends AppCompatActivity implements ConnectFragment.o
                                 }
                             }
                         });
+                    }*/
+                    byte[] buffer = new byte[1];
+                    int bytes = connectedInputStream.read(buffer);
+                    String strIncom = new String(buffer, 0, bytes);
+                    sb.append(strIncom); // собираем символы в строку
+                    int endOfLineIndex = sb.indexOf("\r\n"); // определяем конец строки
+                    if (endOfLineIndex > 0) {
+                        sbprint = sb.substring(0, endOfLineIndex);
+                        sb.delete(0, sb.length());
+                        String[] strMas= sbprint.split(" ");
+                        int[] param = new int[strMas.length];
+
+                        for (int i = 0; i < strMas.length; i++) param[i] = Integer.parseInt(strMas[i]);
+                        switch (param[0]) {
+                            case 1:
+                                switch (param[1]) {
+                                    case 2:
+                                        alarmRecord[param[2]].hrs = param[3];
+                                        alarmRecord[param[2]].min = param[4];
+                                        if (param[5] == 1) {
+                                            alarmRecord[param[2]].state = true;
+                                        } else {
+                                            alarmRecord[param[2]].state = false;
+                                        }
+
+                                        break;
+                                }
+                                break;
+                        }
                     }
                 } catch (IOException e) {
                     break;
