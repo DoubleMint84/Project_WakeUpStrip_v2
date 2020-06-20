@@ -73,7 +73,7 @@
         android:text="0:00"
         android:textSize="20sp" />
 
-    <Switch
+    <androidx.appcompat.widget.SwitchCompat
         android:id="@+id/swAl1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -81,7 +81,7 @@
         android:layout_marginStart="50dp"
         android:layout_marginTop="30dp"
         android:layout_toEndOf="@+id/butAlFirst"
-        android:text="Off"
+        android:text="@string/switch_label_state"
         android:textSize="20sp" />
 
     <Button
@@ -95,7 +95,7 @@
         android:text="0:00"
         android:textSize="20sp" />
 
-    <Switch
+    <androidx.appcompat.widget.SwitchCompat
         android:id="@+id/swAl2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -103,7 +103,7 @@
         android:layout_marginStart="50dp"
         android:layout_marginTop="30dp"
         android:layout_toEndOf="@+id/butAlSecond"
-        android:text="Off"
+        android:text="@string/switch_label_state"
         android:textSize="20sp" />
 
     <Button
@@ -117,7 +117,7 @@
         android:text="0:00"
         android:textSize="20sp" />
 
-    <Switch
+    <androidx.appcompat.widget.SwitchCompat
         android:id="@+id/swAl3"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -125,7 +125,7 @@
         android:layout_marginStart="50dp"
         android:layout_marginTop="30dp"
         android:layout_toEndOf="@+id/butAlThird"
-        android:text="Off"
+        android:text="@string/switch_label_state"
         android:textSize="20sp" />
 
     <Button
@@ -139,7 +139,7 @@
         android:text="0:00"
         android:textSize="20sp" />
 
-    <Switch
+    <androidx.appcompat.widget.SwitchCompat
         android:id="@+id/swAl4"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -147,7 +147,7 @@
         android:layout_marginStart="50dp"
         android:layout_marginTop="30dp"
         android:layout_toEndOf="@+id/butAlForth"
-        android:text="Off"
+        android:text="@string/switch_label_state"
         android:textSize="20sp" />
 
     <Button
@@ -161,7 +161,7 @@
         android:text="0:00"
         android:textSize="20sp" />
 
-    <Switch
+    <androidx.appcompat.widget.SwitchCompat
         android:id="@+id/swAl5"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -169,7 +169,7 @@
         android:layout_marginStart="50dp"
         android:layout_marginTop="30dp"
         android:layout_toEndOf="@+id/butAlFifth"
-        android:text="Off"
+        android:text="@string/switch_label_state"
         android:textSize="20sp" />
 
 

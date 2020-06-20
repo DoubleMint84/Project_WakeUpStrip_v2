@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">WakeUpStrip 2.0 App</string>
+    <string name="switch_label_state">State</string>
 </resources>

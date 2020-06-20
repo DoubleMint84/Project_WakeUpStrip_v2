@@ -6,17 +6,18 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.Switch;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 
 public class AlarmsFragment extends Fragment {
     private Button setTimeBut[] = new Button[5];
-    private Switch stateAl[] = new Switch[5];
-
+    private SwitchCompat stateAl[] = new SwitchCompat[5];
 
 
 
@@ -24,6 +25,7 @@ public class AlarmsFragment extends Fragment {
         public String getTime(int num);
         public boolean getState(int num);
         public void changeTime(int num);
+        public void changeState(int num);
     }
     onAlarmListener alarmListener;
 
@@ -57,6 +59,36 @@ public class AlarmsFragment extends Fragment {
             stateAl[i].setChecked(alarmListener.getState(i));
 
         }
+        stateAl[0].setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                alarmListener.changeState(0);
+            }
+        });
+        stateAl[1].setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                alarmListener.changeState(1);
+            }
+        });
+        stateAl[2].setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                alarmListener.changeState(2);
+            }
+        });
+        stateAl[3].setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                alarmListener.changeState(3);
+            }
+        });
+        stateAl[4].setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                alarmListener.changeState(4);
+            }
+        });
         setTimeBut[0].setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

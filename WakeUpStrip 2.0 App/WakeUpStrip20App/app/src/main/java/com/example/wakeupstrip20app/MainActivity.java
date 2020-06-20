@@ -173,11 +173,27 @@ public class MainActivity extends AppCompatActivity implements ConnectFragment.o
 
     }
 
+    @Override
+    public void changeState(int num) {
+        alarmRecord[num].state = !alarmRecord[num].state;
+        if (myThreadConnected != null) {
+            byte[] bytesToSend = ("$1 2 " + num + " " + (alarmRecord[num].state ? 1 : 0) + ";").getBytes();
+            myThreadConnected.write(bytesToSend );
+
+
+        }
+
+    }
+
     TimePickerDialog.OnTimeSetListener tPick = new TimePickerDialog.OnTimeSetListener() {
         @Override
         public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
             alarmRecord[currentAl].hrs = hourOfDay;
             alarmRecord[currentAl].min = minute;
+            if (myThreadConnected != null) {
+                byte[] bytesToSend = ("$1 3 " + currentAl + " " + alarmRecord[currentAl].hrs + " " + alarmRecord[currentAl].min + ";").getBytes();
+                myThreadConnected.write(bytesToSend );
+            }
             Button but;
             switch (currentAl) {
                 case 0:
