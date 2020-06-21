@@ -203,7 +203,16 @@ void command_parse() {
     } Serial.println();
     switch (intData[0]) {
       case 0:
-
+        for (int i = 0; i < 5; i++) {
+          Serial1.print("1 3 ");
+          Serial1.print(i);
+          Serial1.print(' ');
+          Serial1.print(alarms[i].hour);
+          Serial1.print(' ');
+          Serial1.print(alarms[i].minute);
+          Serial1.print(' ');
+          Serial1.println(alarms[i].isActive ? "1" : "0");
+        }
         break;
 
       case 1:
@@ -220,7 +229,7 @@ void command_parse() {
             rtc.adjust(DateTime(intData[4], intData[3], intData[2], t_now.hour(), t_now.minute(), t_now.second()));
             break;
           case 2:
-            alarms[intData[2]].isActive = !alarms[intData[2]].isActive;
+            alarms[intData[2]].isActive = (intData[3] == 1);
             writeAlarmToSd(1);
             inMenu = false;
             myOLED.clrScr();
@@ -230,6 +239,13 @@ void command_parse() {
               myOLED.print(F("Alarm 1 OFF"), LEFT, 0);
             }
             myOLED.update();
+            break;
+          case 3:
+            
+            alarms[intData[2]].hour = intData[3];
+            alarms[intData[2]].minute = intData[4];
+            writeAlarmToSd(0);
+            calcDawn();
             break;
         }
         break;
@@ -254,7 +270,7 @@ void command_parse() {
 
 void parsing() {
   if (Serial1.available() > 0) {
-    Serial.println("Data detected");
+
     char incomingByte = Serial1.read();        // обязательно ЧИТАЕМ входящий символ
     if (getStarted) {                         // если приняли начальный символ (парсинг разрешён)
       if (incomingByte != ' ' && incomingByte != ';') {   // если это не пробел И не конец
@@ -266,6 +282,8 @@ void parsing() {
       }
     }
     if (incomingByte == '$') {                // если это $
+      Serial.println("Data detected");
+
       getStarted = true;                      // поднимаем флаг, что можно парсить
       index = 0;                              // сбрасываем индекс
       string_convert = "";                    // очищаем строку

@@ -14,6 +14,7 @@ import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -42,6 +43,7 @@ public class MainActivity extends AppCompatActivity implements ConnectFragment.o
     private static final int REQUEST_ENABLE_BT = 1;
     private StringBuilder sb = new StringBuilder();
     public int currentAl = 0;
+    private static final String TAG = "myLogs";
 
 
     public AlarmRecord[] alarmRecord = new AlarmRecord[5];
@@ -368,8 +370,11 @@ public class MainActivity extends AppCompatActivity implements ConnectFragment.o
                     sb.append(strIncom); // собираем символы в строку
                     int endOfLineIndex = sb.indexOf("\r\n"); // определяем конец строки
                     if (endOfLineIndex > 0) {
+
+                        Log.d(TAG, "DATA DETECTED");
                         sbprint = sb.substring(0, endOfLineIndex);
                         sb.delete(0, sb.length());
+                        //Toast.makeText(MainActivity.this, sbprint, Toast.LENGTH_SHORT).show();
                         String[] strMas= sbprint.split(" ");
                         int[] param = new int[strMas.length];
 
@@ -377,7 +382,7 @@ public class MainActivity extends AppCompatActivity implements ConnectFragment.o
                         switch (param[0]) {
                             case 1:
                                 switch (param[1]) {
-                                    case 2:
+                                    case 3:
                                         alarmRecord[param[2]].hrs = param[3];
                                         alarmRecord[param[2]].min = param[4];
                                         if (param[5] == 1) {
@@ -391,6 +396,7 @@ public class MainActivity extends AppCompatActivity implements ConnectFragment.o
                                 break;
                         }
                     }
+
                 } catch (IOException e) {
                     break;
                 }

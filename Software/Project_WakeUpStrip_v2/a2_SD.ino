@@ -47,7 +47,7 @@ void writeAlarmToSd(byte event) {
       Serial.print(F(". Writing to file..."));
       break;
     case 1:
-      Serial.print(F("1 alarm: changing state..."));
+      Serial.print(F("alarm: changing state..."));
   }
 
   SD.remove("data.txt");
